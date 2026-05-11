@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220">
+  <rect width="400" height="220" fill="#0d1b11"/>
+  <rect x="20" y="20" width="360" height="180" rx="12" fill="#22c55e" stroke="#14532d" stroke-width="4"/>
+  <text x="200" y="128" font-size="44" text-anchor="middle" fill="#052e16" font-family="Arial">CORRECTA</text>
+</svg>

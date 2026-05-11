@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220">
+  <rect width="400" height="220" fill="#1c1f26"/>
+  <rect x="20" y="20" width="360" height="180" rx="12" fill="#2b3240" stroke="#7b8794" stroke-width="4"/>
+  <text x="200" y="128" font-size="44" text-anchor="middle" fill="#e2e8f0" font-family="Arial">TRAMPILLA</text>
+</svg>
