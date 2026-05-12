@@ -1,0 +1,25 @@
+# Archivos compilados de Python (Lo que aparece en tu carpeta src/)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales (Buenas prácticas, por si creas uno después)
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Archivos de distribución y empaquetado
+dist/
+build/
+*.egg-info/
+
+# Archivos de editores e IDEs (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+*.swp
+
+# Archivos del sistema operativo (Mac/Windows)
+.DS_Store
+Thumbs.db
