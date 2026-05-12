@@ -80,7 +80,7 @@ def _build_classic_prompt() -> str:
         "Debes usar la herramienta google_search para cada tema y responder solo JSON estricto. "
         "NO incluyas markdown ni texto fuera del JSON. "
         "IMPORTANTE: fuente_busqueda debe ser referencia textual sin URL (ej. nombre de medio + fecha).\n\n"
-        "Genera exactamente 8 pares temáticos (16 preguntas), un par por ronda.\n"
+        "Genera exactamente 8 pares temáticos (16 preguntas, todas de diferentes temáticas), un par por ronda.\n"
         "Reglas por ronda:\n"
         + "\n".join(rounds_description)
         + "\n\nSchema obligatorio:\n"
@@ -111,7 +111,7 @@ def _build_classic_prompt() -> str:
         "Reglas estrictas:\n"
         "1) Debes usar google_search en cada pregunta antes de escribirla.\n"
         "2) Deben existir exactamente 8 objetos en pares y cada uno con 2 preguntas.\n"
-        "3) respuesta_correcta debe coincidir exactamente con una opcion.\n"
+        "3) respuesta_correcta debe coincidir exactamente con una opcion. Para cumplimentar esto, cuando busques la pregunta, añade la respuesta correcta como respuesta_correcta y a opciones directamente\n"
         "4) No repitas en exceso la misma respuesta correcta.\n"
         "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\" Y explica por que no puedes cumplir}."
     )
