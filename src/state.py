@@ -36,6 +36,9 @@ def init_session_state() -> None:
         "question_confirmed": False,
         "selected_topic_in_pair": None,
         "classic_generated_at": None,
+        "lifelines_used": set(),
+        "hidden_options": set(),
+        "all_in_active": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -59,6 +62,9 @@ def hard_reset_game(mode: str) -> None:
     st.session_state.revealed_correct = False
     st.session_state.question_confirmed = False
     st.session_state.selected_topic_in_pair = None
+    st.session_state.lifelines_used = set()
+    st.session_state.hidden_options = set()
+    st.session_state.all_in_active = False
 
 
 def new_generation_cycle() -> str:

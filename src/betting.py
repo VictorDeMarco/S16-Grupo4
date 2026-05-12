@@ -43,7 +43,7 @@ def adjust_bet(
         return BetValidation(False, "La apuesta no puede ser negativa")
 
     projected_total = sum(bets.values()) - current_value + new_value
-    if projected_total > money_total:
+    if projected_total >= money_total:
         return BetValidation(False, "No puedes apostar más dinero del disponible")
 
     bets[option] = new_value

@@ -9,6 +9,8 @@ from src.betting import adjust_bet, validate_bets
 from src.cancel_control import clear_job, get_job, is_request_stale, start_job
 from src.game_logic import (
     advance_round_or_finish,
+    apply_all_in,
+    apply_fifty_fifty,
     choose_topic_for_current_pair,
     get_round_option_count,
     initialize_bets_for_current_question,
@@ -16,9 +18,15 @@ from src.game_logic import (
     load_custom_questions,
     pair_topics_for_current_round,
     prepare_custom_topics,
+    replace_current_question,
     resolve_current_round,
 )
-from src.gemini_client import GeminiGenerationError, generate_classic_pairs, generate_custom_questions
+from src.gemini_client import (
+    GeminiGenerationError,
+    generate_classic_pairs,
+    generate_custom_questions,
+    generate_replacement_question,
+)
 from src.models import GameConfig
 from src.state import cancel_generation, hard_reset_game, init_session_state, new_generation_cycle
 
@@ -132,16 +140,24 @@ ASSET_CORRECT = "assets/trap_correct.svg"
 
 
 def _render_trap_column(option: str, idx: int, disabled: bool) -> None:
+    hidden = option in st.session_state.hidden_options
     image_path = ASSET_CLOSED
     if st.session_state.revealed_correct:
         if option == st.session_state.current_question.respuesta_correcta:
             image_path = ASSET_CORRECT
         else:
             image_path = ASSET_OPEN
+    elif hidden:
+        image_path = ASSET_OPEN
 
     st.image(image_path, use_container_width=True)
 
-    if st.session_state.revealed_correct and option == st.session_state.current_question.respuesta_correcta:
+    if hidden and not st.session_state.revealed_correct:
+        st.markdown(
+            "<div style='padding:0.5rem;border-radius:8px;background:#5f6368;color:white;font-weight:700;'>Eliminada</div>",
+            unsafe_allow_html=True,
+        )
+    elif st.session_state.revealed_correct and option == st.session_state.current_question.respuesta_correcta:
         st.markdown(
             f"<div style='padding:0.5rem;border-radius:8px;background:#1f7a1f;color:white;font-weight:700;'>{option}</div>",
             unsafe_allow_html=True,
@@ -154,17 +170,74 @@ def _render_trap_column(option: str, idx: int, disabled: bool) -> None:
 
     c1, c2 = st.columns(2)
     with c1:
-        if st.button("-", key=minus_key, disabled=disabled, use_container_width=True):
+        if st.button("-", key=minus_key, disabled=disabled or hidden, use_container_width=True):
             result = adjust_bet(st.session_state.bets_by_option, option, -1, st.session_state.money_total)
             if not result.valid:
                 st.warning(result.message)
     with c2:
-        if st.button("+", key=plus_key, disabled=disabled, use_container_width=True):
+        if st.button("+", key=plus_key, disabled=disabled or hidden, use_container_width=True):
             result = adjust_bet(st.session_state.bets_by_option, option, 1, st.session_state.money_total)
             if not result.valid:
                 st.warning(result.message)
 
     st.caption(f"Apuesta: ${st.session_state.bets_by_option.get(option, 0):,}")
+
+
+def _mark_lifeline_used(name: str) -> None:
+    st.session_state.lifelines_used = set(st.session_state.lifelines_used)
+    st.session_state.lifelines_used.add(name)
+
+
+def _render_lifelines() -> None:
+    question = st.session_state.current_question
+    if not question or st.session_state.question_confirmed:
+        return
+
+    st.markdown("### Comodines")
+    used = set(st.session_state.lifelines_used)
+    available_options = [option for option in question.opciones if option not in st.session_state.hidden_options]
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button(
+            "Cambiar pregunta",
+            disabled="change_question" in used,
+            use_container_width=True,
+        ):
+            try:
+                with st.spinner("Generando una nueva pregunta..."):
+                    new_question = generate_replacement_question(question.tema, st.session_state.round_index)
+                replace_current_question(new_question)
+                _mark_lifeline_used("change_question")
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
+
+    with c2:
+        if st.button(
+            "50%",
+            disabled="fifty_fifty" in used or len(question.opciones) < 3,
+            use_container_width=True,
+        ):
+            removed = apply_fifty_fifty()
+            _mark_lifeline_used("fifty_fifty")
+            st.success(f"Eliminadas: {', '.join(removed)}")
+
+    with c3:
+        all_in_option = st.selectbox(
+            "All in",
+            options=available_options,
+            disabled="all_in" in used or st.session_state.all_in_active,
+            label_visibility="collapsed",
+        )
+        if st.button(
+            "Apostar todo",
+            disabled="all_in" in used or st.session_state.all_in_active or not available_options,
+            use_container_width=True,
+        ):
+            if apply_all_in(all_in_option):
+                _mark_lifeline_used("all_in")
+                st.success("All in activado: si aciertas, ganas un 50% extra")
 
 
 def _render_betting_area() -> None:
@@ -182,13 +255,18 @@ def _render_betting_area() -> None:
     st.markdown(f"### Ronda {st.session_state.round_index}/8")
     st.markdown(f"**Tema:** {question.tema}")
     st.markdown(f"**Pregunta:** {question.pregunta}")
+    _render_lifelines()
 
     options = question.opciones
     trap_columns = st.columns(4)
     for idx in range(4):
         with trap_columns[idx]:
             if idx < len(options):
-                _render_trap_column(options[idx], idx, st.session_state.question_confirmed)
+                _render_trap_column(
+                    options[idx],
+                    idx,
+                    st.session_state.question_confirmed or st.session_state.all_in_active,
+                )
             else:
                 st.image(ASSET_OPEN, use_container_width=True)
                 st.caption("Sin trampilla")

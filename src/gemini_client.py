@@ -156,6 +156,29 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
     )
 
 
+def _build_replacement_prompt(topic: str, round_index: int, expected_options: int) -> str:
+    return (
+        "Eres un generador de preguntas para un juego tipo Atrapa un Millon. "
+        "Debes usar google_search y responder solo JSON estricto. "
+        "NO incluyas markdown ni texto adicional. "
+        "fuente_busqueda debe ser textual y nunca URL.\n\n"
+        f"Genera exactamente 1 pregunta nueva para la ronda {round_index} sobre este tema: {topic}.\n"
+        f"La pregunta debe tener exactamente {expected_options} opciones.\n\n"
+        "Schema obligatorio:\n"
+        "{\n"
+        '  "tema": "...",\n'
+        '  "pregunta": "...",\n'
+        '  "opciones": ["..."],\n'
+        '  "respuesta_correcta": "...",\n'
+        '  "fuente_busqueda": "fuente textual sin URL"\n'
+        "}\n\n"
+        "Reglas:\n"
+        "1) respuesta_correcta debe coincidir exactamente con una opcion.\n"
+        "2) No reutilices una pregunta generica; debe ser concreta y verificable.\n"
+        "3) Si no puedes cumplir, responde {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\"}."
+    )
+
+
 def _call_gemini(prompt: str) -> dict[str, Any]:
     model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash").strip() or "gemini-2.0-flash"
     client = _client()
@@ -223,3 +246,9 @@ def generate_custom_questions(expanded_topics: list[str]) -> list[Question]:
         parsed.append(_validate_question_dict(item, expected_options))
 
     return parsed
+
+
+def generate_replacement_question(topic: str, round_index: int) -> Question:
+    expected_options = allowed_options_for_round(round_index)
+    payload = _call_gemini(_build_replacement_prompt(topic, round_index, expected_options))
+    return _validate_question_dict(payload, expected_options)
