@@ -113,7 +113,7 @@ def _build_classic_prompt() -> str:
         "2) Deben existir exactamente 8 objetos en pares y cada uno con 2 preguntas.\n"
         "3) respuesta_correcta debe coincidir exactamente con una opcion.\n"
         "4) No repitas en exceso la misma respuesta correcta.\n"
-        "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\"}."
+        "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\" Y explica por que no puedes cumplir}."
     )
 
 
@@ -165,7 +165,6 @@ def _call_gemini(prompt: str) -> dict[str, Any]:
         contents=prompt,
         config=types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],
-            response_mime_type="application/json",
             temperature=0.3,
         ),
     )
