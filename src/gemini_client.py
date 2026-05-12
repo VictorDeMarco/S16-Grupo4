@@ -128,13 +128,11 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
 
     return (
         "Eres un generador de preguntas para un juego tipo Atrapa un Millón. "
-        "Debes usar google_search para cada tema y responder solo JSON estricto. "
-        "NO incluyas markdown ni texto adicional. "
-        "fuente_busqueda debe ser textual y nunca URL.\n\n"
-        f"Temas por ronda (exactamente 8): {topics_json}\n"
-        "Opciones por ronda:\n"
-        + "\n".join(rounds_description)
-        + "\n\n"
+        "Debes usar la herramienta google_search para cada tema y responder solo JSON estricto. "
+        "NO incluyas markdown ni texto fuera del JSON. "
+        "IMPORTANTE: fuente_busqueda debe ser referencia de la URL.\n\n"
+        "El usuario aportara de 1 a 8 temas, iras rotando cada tema en cada ronda, donde en cada ronda va aumentando la dificultad de forma progresiva, llegando a un nivel de dificultad muy elevado en la uĺtima ronda.\n"
+        f"Temas a repartir en cada ronda: {topics_json}\n"
         "Schema obligatorio:\n"
         "{\n"
         '  "modo": "custom",\n'
@@ -149,10 +147,11 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
         "  ]\n"
         "}\n\n"
         "Reglas:\n"
-        "1) Deben ser exactamente 8 preguntas.\n"
-        "2) La pregunta i debe usar el tema i del arreglo de temas.\n"
-        "3) Debes usar google_search para cada una.\n"
-        "4) Si no puedes cumplir, responde {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\"}."
+        "1) Debes usar google_search en cada pregunta antes de escribirla.\n"
+        "2) Deben existir exactamente 8 objetos con 4 respuestas solo una respuesta correcta.\n"
+        "3) respuesta_correcta debe coincidir exactamente con una opcion. Para cumplimentar esto, cuando busques la pregunta, añade la respuesta correcta como respuesta_correcta y a opciones directamente\n"
+        "4) No repitas en exceso la misma respuesta correcta.\n"  
+        "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\" Y explica por que no puedes cumplir}."
     )
 
 

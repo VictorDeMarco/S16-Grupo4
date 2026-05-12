@@ -112,6 +112,7 @@ def advance_round_or_finish() -> None:
         next_index = st.session_state.round_index - 1
         if next_index < len(st.session_state.questions_pool):
             st.session_state.current_question = st.session_state.questions_pool[next_index]
+            initialize_bets_for_current_question()
 
     if st.session_state.mode == "clasico":
         st.session_state.current_pair_index += 1
