@@ -130,7 +130,7 @@ def _build_classic_prompt() -> str:
         "3. REGLA DE ORO: Si una pregunta parece sacada de un Trivial convencional en rondas más avanzadas (a partir de la ronda 5), deséchala y busca un ángulo más específico (ej. en lugar de '¿Quién pintó la Mona Lisa?', busca '¿Qué anomalía detectaron científicos en la capa inferior de la Mona Lisa en 2024?').\n\n"
 
         "### INSTRUCCIONES DE EJECUCIÓN:\n"
-        "1. DEFINE 16 sub-categorías ultra-específicas (ej. Micología, Historia del Siglo XIV, Ingeniería Ferroviaria, Lingüística de lenguas muertas, etc.).\n"
+        "1. DEFINE 16 sub-categorías (ej. Micología, Historia del Siglo XIV, etc.).\n"
         "2. EJECUTA google_search para cada una para extraer un hecho real, verificable y con una cifra o nombre propio específico.\n"
         "3. ESCALA la dificultad: Ronda 1 son preguntas de cultura general; Ronda 8 debe requerir un conocimiento técnico o de nicho extremo.\n"
         "4. FUENTE: Debe ser un medio especializado, paper científico o institución oficial.\n\n"
@@ -196,31 +196,46 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
     """
 
     return (
-        "Eres un generador de preguntas para un juego tipo Atrapa un Millón. "
-        "Debes usar la herramienta google_search para cada tema y responder solo JSON estricto. "
-        "NO incluyas markdown ni texto fuera del JSON. "
-        "IMPORTANTE: fuente_busqueda debe ser referencia de la URL.\n\n"
-        "El usuario aportara de 1 a 8 temas, iras rotando cada tema en cada ronda, donde en cada ronda va aumentando la dificultad de forma progresiva, llegando a un nivel de dificultad muy elevado en la uĺtima ronda.\n"
-        f"Temas a repartir en cada ronda: {topics_json}\n"
-        "Schema obligatorio:\n"
-        "{\n"
-        '  "modo": "custom",\n'
-        '  "preguntas": [\n'
-        "    {\n"
-        '      "tema": "...",\n'
-        '      "pregunta": "...",\n'
-        '      "opciones": ["..."],\n'
-        '      "respuesta_correcta": "...",\n'
-        '      "fuente_busqueda": "fuente textual sin URL"\n'
-        "    }\n"
-        "  ]\n"
-        "}\n\n"
-        "Reglas:\n"
-        "1) Debes usar google_search en cada pregunta antes de escribirla.\n"
-        "2) Deben existir exactamente 8 objetos con 4 respuestas solo una respuesta correcta.\n"
-        "3) respuesta_correcta debe coincidir exactamente con una opcion. Para cumplimentar esto, cuando busques la pregunta, añade la respuesta correcta como respuesta_correcta y a opciones directamente\n"
-        "4) No repitas en exceso la misma respuesta correcta.\n"  
-        "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\" Y explica por que no puedes cumplir}."
+    "Eres un Ingeniero de Preguntas experto en 'Atrapa un Millón'. Tu misión es generar un set de 8 preguntas "
+    "basadas en los temas proporcionados por el usuario (8 maximo), utilizando ÚNICAMENTE hallazgos específicos obtenidos mediante google_search.\n\n"
+
+    "### PROTOCOLO DE BÚSQUEDA ANTI-CLICHÉ (Obligatorio):\n"
+    "1. Para cada tema, NO uses el primer dato que te venga a la mente. Realiza una búsqueda en Google de 'datos curiosos poco conocidos sobre [TEMA]', 'noticias recientes sobre [TEMA]' o 'estadísticas actualizadas de [TEMA]'.\n"
+    "2. PROHIBIDO: Preguntar por capitales obvias, autores de obras maestras universales (García Márquez, Cervantes, Shakespeare), o hitos históricos de primaria.\n"
+    "3. REGLA DE ORO: A partir de la ronda 5, deshecha cualquier pregunta de 'Trivial' convencional. Busca un ángulo técnico o científico (ej. en lugar de '¿Qué es el ADN?', busca '¿Qué descubrimiento sobre el ADN epigenético se publicó en Nature en 2024?').\n\n"
+
+    "### LOGICA DE DISTRIBUCIÓN Y TEMAS:\n"
+    f"1. TEMAS BASE: El usuario aporta estos temas: {topics_json}. Debes rotarlos para cubrir las 8 preguntas (1 por ronda).\n"
+    "2. DIVERSIDAD: Los dos temas de cada ronda deben ser contrastados y nunca solaparse. Prohibido repetir el valor exacto de 'tema' en todo el JSON.\n\n"
+
+    "### INSTRUCCIONES DE EJECUCIÓN:\n"
+    "1. ESCALA la dificultad: La Ronda 1 es cultura general accesible; la Ronda 8 debe ser de nivel experto/nicho extremo.\n"
+    "2. FUENTE: Debe ser una URL directa o referencia textual a un medio especializado, paper científico o institución oficial.\n"
+    "3. REGLA DE OPCIONES: Debes ajustar el número de distractores según las reglas de cada ronda. Si una ronda exige menos opciones, elimina las incorrectas más débiles, manteniendo SIEMPRE la respuesta_correcta.\n\n"
+
+"### REGLAS POR RONDA:\n"
+    + "\n".join(rounds_description) +
+    "\n\n### FORMATO DE SALIDA (JSON ESTRICTO):\n"
+    "Responde UNICAMENTE con el objeto JSON. Sin markdown, sin texto adicional.\n"
+    "{\n"
+    '  "modo": "custom",\n'
+    '  "preguntas": [\n'
+    "    {\n"
+    '      "tema": "...",\n'
+    '      "pregunta": "...",\n'
+    '      "opciones": ["..."],\n'
+    '      "respuesta_correcta": "...",\n'
+    '      "fuente_busqueda": "fuente textual sin URL"\n'
+    "    }\n"
+    "  ]\n"
+    "}\n\n"
+
+    "### REGLAS CRÍTICAS DE VALIDACIÓN:\n"
+    "1) Uso obligatorio de google_search en CADA una de las 8 preguntas.\n"
+    "2) Deben existir exactamente 8 objetos en el array 'preguntas', numerados del 1 al 8 en 'ronda'.\n"
+    "3) 'respuesta_correcta' debe ser idéntica a una de las 'opciones'.\n"
+    "4) El número de elementos en el array 'opciones' debe ser exactamente el que dicte 'REGLAS POR RONDA' para esa ronda específica. Si sobran, elimina las incorrectas.\n"
+    "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\", \"motivo\":\"...\"}."
     )
 
 
