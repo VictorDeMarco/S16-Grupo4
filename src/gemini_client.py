@@ -156,7 +156,7 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
 
 
 def _call_gemini(prompt: str) -> dict[str, Any]:
-    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash").strip() or "gemini-2.0-flash"
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip() or "gemini-2.0-flash"
     client = _client()
 
     response = client.models.generate_content(

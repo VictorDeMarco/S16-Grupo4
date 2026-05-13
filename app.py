@@ -21,6 +21,7 @@ from src.game_logic import (
 from src.gemini_client import GeminiGenerationError, generate_classic_pairs, generate_custom_questions
 from src.models import GameConfig
 from src.state import cancel_generation, hard_reset_game, init_session_state, new_generation_cycle
+from src import voice
 
 load_dotenv()
 
@@ -90,6 +91,11 @@ def _render_generation_controls() -> None:
             if st.session_state.generation_status == "running":
                 cancel_generation("Se priorizó la nueva solicitud custom")
             hard_reset_game("custom")
+            # Reproducir presentación al iniciar generación custom
+            try:
+                voice.play_intro_once()
+            except Exception:
+                pass
             request_id = new_generation_cycle()
             try:
                 expanded_topics = prepare_custom_topics(topics, cfg.total_rounds)
@@ -110,6 +116,10 @@ def _render_generation_controls() -> None:
     else:
         if st.button("Iniciar modo Clásico", type="primary", use_container_width=True):
             hard_reset_game("clasico")
+            try:
+                voice.play_intro_once()
+            except Exception:
+                pass
             request_id = new_generation_cycle()
             start_job(request_id, generate_classic_pairs)
             st.session_state.generation_status = "running"
@@ -193,6 +203,15 @@ def _render_betting_area() -> None:
                 st.image(ASSET_OPEN, use_container_width=True)
                 st.caption("Sin trampilla")
 
+    # Mantener la música de fondo mientras la apuesta siga abierta
+    if not st.session_state.question_confirmed and st.session_state.pending_question_audio:
+        voice.play_background_music()
+
+    # Reproducir el locutor una sola vez, ya con la pantalla completa visible
+    if not st.session_state.question_audio_played and st.session_state.pending_question_audio:
+        voice.play_question_voice(st.session_state.pending_question_audio)
+        st.session_state.question_audio_played = True
+
     total_bet = sum(st.session_state.bets_by_option.values())
     st.info(f"Apuesta total: ${total_bet:,} / Dinero disponible: ${st.session_state.money_total:,}")
 
@@ -209,12 +228,15 @@ def _render_betting_area() -> None:
                 resolve_current_round()
                 st.session_state.question_confirmed = True
                 st.session_state.revealed_correct = True
+                st.session_state.pending_question_audio = None
+                st.rerun()
     else:
         st.success(f"Respuesta correcta: {question.respuesta_correcta}")
         if st.button("Continuar", type="primary", use_container_width=True):
             advance_round_or_finish()
             if st.session_state.mode == "custom" and st.session_state.current_question is not None:
                 initialize_bets_for_current_question()
+            st.rerun()
 
 
 def _render_classic_topic_selector() -> None:
@@ -232,10 +254,12 @@ def _render_classic_topic_selector() -> None:
         if st.button(left_topic, use_container_width=True):
             choose_topic_for_current_pair(left_topic)
             initialize_bets_for_current_question()
+            st.rerun()
     with c2:
         if st.button(right_topic, use_container_width=True):
             choose_topic_for_current_pair(right_topic)
             initialize_bets_for_current_question()
+            st.rerun()
 
 
 def _render_game_area() -> None:
@@ -265,8 +289,6 @@ def _render_game_area() -> None:
     _render_betting_area()
 
 
-_sync_classic_background_job()
-
 st.title("Atrapa un Millón IA")
 metric_1, metric_2, metric_3 = st.columns(3)
 metric_1.metric("Dinero", f"${st.session_state.money_total:,}")
@@ -280,3 +302,6 @@ with right:
     _render_game_area()
 
 st.caption("Nota: en modo clásico, la generación corre en segundo plano. Si pasas a custom, se cancela y se prioriza custom.")
+
+# Sincronizar trabajos de fondo DESPUÉS de renderizar controles
+_sync_classic_background_job()

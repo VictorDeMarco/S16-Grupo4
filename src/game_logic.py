@@ -5,6 +5,7 @@ from dataclasses import asdict
 import streamlit as st
 
 from src.betting import allowed_options_for_round
+from src import voice
 from src.models import GameConfig, Question, RoundResult
 
 
@@ -62,6 +63,14 @@ def initialize_bets_for_current_question() -> None:
     if not question:
         return
     st.session_state.bets_by_option = {option: 0 for option in question.opciones}
+    # Generar audio pero NO reproducirlo aún. Se reproducirá cuando se muestre el área de apuestas.
+    try:
+        audio_bytes = voice.generate_question_audio(question)
+        st.session_state.pending_question_audio = audio_bytes
+        st.session_state.question_audio_played = False
+    except Exception:
+        st.session_state.pending_question_audio = None
+        st.session_state.question_audio_played = False
 
 
 def resolve_current_round() -> RoundResult | None:
@@ -91,6 +100,9 @@ def resolve_current_round() -> RoundResult | None:
 
 def advance_round_or_finish() -> None:
     cfg = GameConfig()
+    # Limpiar audio de la pregunta anterior antes de avanzar
+    voice.cleanup_question_audio()
+    
     if st.session_state.money_total <= 0:
         st.session_state.game_over = True
         st.session_state.final_summary = build_final_summary()
@@ -107,6 +119,8 @@ def advance_round_or_finish() -> None:
     st.session_state.bets_by_option = {}
     st.session_state.current_question = None
     st.session_state.selected_topic_in_pair = None
+    st.session_state.pending_question_audio = None
+    st.session_state.question_audio_played = False
 
     if st.session_state.mode == "custom":
         next_index = st.session_state.round_index - 1

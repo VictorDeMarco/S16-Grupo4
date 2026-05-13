@@ -6,6 +6,7 @@ import uuid
 import streamlit as st
 
 from src.models import GameConfig
+from src import voice
 
 
 def _new_request_id() -> str:
@@ -36,6 +37,8 @@ def init_session_state() -> None:
         "question_confirmed": False,
         "selected_topic_in_pair": None,
         "classic_generated_at": None,
+        "pending_question_audio": None,
+        "question_audio_played": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -44,6 +47,9 @@ def init_session_state() -> None:
 
 def hard_reset_game(mode: str) -> None:
     cfg = GameConfig()
+    # Limpiar audios de preguntas anteriores
+    voice.cleanup_question_audio()
+    
     st.session_state.mode = mode
     st.session_state.money_total = cfg.initial_money
     st.session_state.round_index = 1
@@ -59,6 +65,8 @@ def hard_reset_game(mode: str) -> None:
     st.session_state.revealed_correct = False
     st.session_state.question_confirmed = False
     st.session_state.selected_topic_in_pair = None
+    st.session_state.pending_question_audio = None
+    st.session_state.question_audio_played = False
 
 
 def new_generation_cycle() -> str:
