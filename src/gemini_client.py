@@ -132,7 +132,7 @@ def _build_classic_prompt() -> str:
         "### INSTRUCCIONES DE EJECUCIÓN:\n"
         "1. DEFINE 16 sub-categorías ultra-específicas (ej. Micología, Historia del Siglo XIV, Ingeniería Ferroviaria, Lingüística de lenguas muertas, etc.).\n"
         "2. EJECUTA google_search para cada una para extraer un hecho real, verificable y con una cifra o nombre propio específico.\n"
-        "3. ESCALA la dificultad: Ronda 1 son curiosidades interesantes; Ronda 8 debe requerir un conocimiento técnico o de nicho extremo.\n"
+        "3. ESCALA la dificultad: Ronda 1 son preguntas de cultura general; Ronda 8 debe requerir un conocimiento técnico o de nicho extremo.\n"
         "4. FUENTE: Debe ser un medio especializado, paper científico o institución oficial.\n\n"
 
         "### REGLAS DE DIVERSIDAD:\n"
