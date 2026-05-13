@@ -1,0 +1,45 @@
+Actúa como un Desarrollador Senior de Python y Arquitecto de IA.
+
+Necesito el plan de desarrollo y el código base para un juego en Streamlit basado en "Atrapa un Millón".
+
+1. Stack y Conectividad:
+
+Frontend/Backend: Streamlit.
+
+IA: Google Gemini Flash API con la tool google_search.
+
+Lógica de Generación: El juego debe realizar una única llamada masiva que devuelva un JSON con todas las preguntas de la partida para minimizar latencia tras el inicio para el modo clasico.
+
+2. Mecánicas de Juego:
+
+Dinero: 1.000.000 inicial. Gestión de apuestas en bloques de 25.000 con botones (+/-).
+
+Rondas: 8 preguntas. (Rondas 1-4: 4 opciones; 5-7: 3 opciones; 8: 2 opciones).
+
+Modos:
+
+Custom: El usuario da hasta 8 temas. La IA genera 8 preguntas (una por tema, o repitiendo si hay menos).
+
+Clásico: La IA genera 16 preguntas sobre temas aleatorios de actualidad. En cada ronda, el usuario elige 1 de entre 2 temas antes de ver la pregunta.
+
+Interrupción de Hilo: Si el proceso de generación del modo Clásico está activo y el usuario elige e inicia el modo "Custom", se debe abortar la llamada/proceso anterior para priorizar la nueva petición.
+
+3. UI y Estética:
+
+Interfaz funcional con st.columns para las 4 trampillas.
+
+Sin animaciones fluidas. Uso de imágenes estáticas que cambian bruscamente.
+
+Resaltado visual (color verde) de la opción correcta tras confirmar apuesta.
+
+Pantalla final con resumen de ganancias.
+
+4. Lo que necesito de ti:
+
+Estructura de st.session_state: Para controlar el dinero, la ronda actual y el estado de la generación.
+
+System Prompt Maestro: Un prompt iterativo para Gemini que le obligue a usar la herramienta de búsqueda para cada tema y devuelva un JSON estricto con: tema, pregunta, opciones (array), respuesta_correcta y fuente_busqueda.
+
+Lógica de Interrupción: Sugiere cómo manejar la cancelación de la generación en Streamlit (ej. usando threading.Event o gestión de estados).
+
+Código de la lógica de apuestas: Asegurar que el usuario no pueda apostar más de lo que tiene y que siempre deje al menos una trampilla vacía (excepto en la última pregunta).
