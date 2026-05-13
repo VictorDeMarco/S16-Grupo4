@@ -121,12 +121,24 @@ def _build_classic_prompt() -> str:
     """
 
     return (
-        "Eres un generador de preguntas para un juego tipo Atrapa un Millón. "
-        "Debes usar la herramienta google_search para cada tema y responder solo JSON estricto. "
-        "NO incluyas markdown ni texto fuera del JSON. "
-        "IMPORTANTE: fuente_busqueda debe ser referencia textual sin URL (ej. nombre de medio + fecha).\n\n"
-        "Genera exactamente 8 pares temáticos, donde cada pregunta tiene un tema diferente (16 preguntas de 16 temas diferentes en total), un par por ronda, donde en cada ronda va aumentando la dificultad de forma progresiva, llegando a un nivel de dificultad muy elevado en la uĺtima ronda.\n"
-        "Reglas por ronda:\n"
+        "Eres un Ingeniero de Preguntas experto en 'Atrapa un Millón'. Tu misión es generar un set de 16 preguntas "
+        "basadas ÚNICAMENTE en hallazgos específicos obtenidos mediante google_search. \n\n"
+        
+        "### PROTOCOLO DE BÚSQUEDA ANTI-CLICHÉ (Obligatorio):\n"
+        "1. Para cada categoría, NO uses el primer dato que te venga a la mente. Realiza una búsqueda en Google de 'datos curiosos poco conocidos sobre [TEMA]', 'noticias recientes sobre [TEMA]' o 'estadísticas actualizadas de [TEMA]'.\n"
+        "2. PROHIBIDO: Preguntar por capitales obvias, autores de obras maestras universales (García Márquez, Cervantes, Shakespeare), o hitos históricos de primaria (descubrimiento de América, Revolución Francesa).\n"
+        "3. REGLA DE ORO: Si una pregunta parece sacada de un Trivial convencional en rondas más avanzadas (a partir de la ronda 5), deséchala y busca un ángulo más específico (ej. en lugar de '¿Quién pintó la Mona Lisa?', busca '¿Qué anomalía detectaron científicos en la capa inferior de la Mona Lisa en 2024?').\n\n"
+
+        "### INSTRUCCIONES DE EJECUCIÓN:\n"
+        "1. DEFINE 16 sub-categorías ultra-específicas (ej. Micología, Historia del Siglo XIV, Ingeniería Ferroviaria, Lingüística de lenguas muertas, etc.).\n"
+        "2. EJECUTA google_search para cada una para extraer un hecho real, verificable y con una cifra o nombre propio específico.\n"
+        "3. ESCALA la dificultad: Ronda 1 son curiosidades interesantes; Ronda 8 debe requerir un conocimiento técnico o de nicho extremo.\n"
+        "4. FUENTE: Debe ser un medio especializado, paper científico o institución oficial.\n\n"
+
+        "### REGLAS DE DIVERSIDAD:\n"
+        "- Ningún tema puede solaparse. Si usas 'Zoología Marina', no puedes usar 'Biología'.\n"
+        "- Los dos temas de cada par deben ser contrastados (ej. 'Física Cuántica' vs 'Gastronomía Ancestral').\n\n"
+        "REGLAS POR RONDA:\n"
         + "\n".join(rounds_description)
         + "\n\nSchema obligatorio:\n"
         "{\n"
@@ -158,7 +170,10 @@ def _build_classic_prompt() -> str:
         "2) Deben existir exactamente 8 objetos en pares y cada uno con 2 preguntas.\n"
         "3) respuesta_correcta debe coincidir exactamente con una opcion. Para cumplimentar esto, cuando busques la pregunta, añade la respuesta correcta como respuesta_correcta y a opciones directamente\n"
         "4) No repitas en exceso la misma respuesta correcta.\n"  
-        "5) Si no puedes cumplir, responde exactamente: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\" Y explica por que no puedes cumplir}."
+        "5) Prohibido repetir el valor de 'tema'.\n"
+        "6) Cada par de la ronda debe ofrecer dos opciones de juego totalmente distintas entre sí.\n"
+        "7) No puede haber más del número de opciones establecido en REGLAS POR RONDA en las preguntas de cada ronda. SI el número de opciones excede el esperado, elimina las opciones suficientes para que se cumplimente este requisito, siempre y cuando no se elimine la opción que es equivalente a respuesta_correcta."
+        "7) Si no puedes cumplir, responde: {\"error\":\"NO_SE_PUEDE_CUMPLIR_SCHEMA\", \"motivo\":\"...\"}."
     )
 
 
