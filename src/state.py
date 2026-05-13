@@ -10,10 +10,24 @@ from src import voice
 
 
 def _new_request_id() -> str:
+    """Genera un nuevo identificador único para ciclos de generación.
+
+    Returns:
+        Una cadena UUID4 única.
+    """
+
     return str(uuid.uuid4())
 
 
 def init_session_state() -> None:
+    """Inicializa las claves por defecto en `st.session_state` para una partida.
+
+    Crea todas las entradas necesarias si no existen ya en la sesión.
+
+    Returns:
+        None
+    """
+
     cfg = GameConfig()
     defaults = {
         "mode": "custom",
@@ -46,6 +60,17 @@ def init_session_state() -> None:
 
 
 def hard_reset_game(mode: str) -> None:
+    """Reinicia el estado del juego a valores iniciales para el modo indicado.
+
+    Limpia audios previos y restablece las variables necesarias en `st.session_state`.
+
+    Args:
+        mode: Modo a establecer ('custom' o 'clasico').
+
+    Returns:
+        None
+    """
+
     cfg = GameConfig()
     # Limpiar audios de preguntas anteriores
     voice.cleanup_question_audio()
@@ -70,6 +95,15 @@ def hard_reset_game(mode: str) -> None:
 
 
 def new_generation_cycle() -> str:
+    """Inicia un nuevo ciclo de generación y devuelve su `request_id`.
+
+    Cancela cualquier generación previa pendiente, crea un nuevo `cancel_event` y
+    actualiza `st.session_state` con el nuevo identificador.
+
+    Returns:
+        El `request_id` generado para este ciclo.
+    """
+
     if st.session_state.cancel_event is not None:
         st.session_state.cancel_event.set()
     st.session_state.cancel_event = threading.Event()
@@ -83,6 +117,15 @@ def new_generation_cycle() -> str:
 
 
 def cancel_generation(reason: str | None = None) -> None:
+    """Cancela la generación en curso y marca el estado correspondiente.
+
+    Args:
+        reason: Mensaje opcional explicando la razón de la cancelación.
+
+    Returns:
+        None
+    """
+
     if st.session_state.cancel_event is not None:
         st.session_state.cancel_event.set()
     st.session_state.interrupted = True

@@ -12,6 +12,16 @@ except Exception:
 
 
 async def _asegurar_intro_estatica(texto: str, archivo_salida: str) -> None:
+    """Genera y guarda de forma estática el audio de introducción si no existe.
+
+    Args:
+        texto: Texto a sintetizar para la introducción.
+        archivo_salida: Ruta donde guardar el MP3.
+
+    Returns:
+        None
+    """
+
     os.makedirs(os.path.dirname(archivo_salida), exist_ok=True)
     if not os.path.exists(archivo_salida):
         voz = "es-ES-AlvaroNeural"
@@ -20,27 +30,48 @@ async def _asegurar_intro_estatica(texto: str, archivo_salida: str) -> None:
 
 
 def _render_audio_html(src: str, audio_id: str, *, loop: bool = False, volume: float | None = None) -> None:
-    loop_attr = " loop" if loop else ""
-    volume_js = f"try {{ audio.volume = {volume}; }} catch (e) {{}}" if volume is not None else ""
-    html = f"""
-    <div style="display:none">
-      <audio id="{audio_id}" autoplay{loop_attr}>
-        <source src="{src}" type="audio/mp3">
-      </audio>
-    </div>
-    <script>
-      (function() {{
-        const audio = document.getElementById('{audio_id}');
-        if (!audio) return;
-        {volume_js}
-        audio.play().catch(() => {{}});
-      }})();
-    </script>
-    """
-    components.html(html, height=0)
+        """Inserta HTML que reproduce audio en la página Streamlit.
+
+        Args:
+                src: URL o data URI del audio.
+                audio_id: Identificador HTML para el elemento audio.
+                loop: Si el audio debe repetirse en bucle.
+                volume: Volumen entre 0.0 y 1.0, si se desea forzar.
+
+        Returns:
+                None
+        """
+
+        loop_attr = " loop" if loop else ""
+        volume_js = f"try {{ audio.volume = {volume}; }} catch (e) {{}}" if volume is not None else ""
+        html = f"""
+        <div style="display:none">
+            <audio id="{audio_id}" autoplay{loop_attr}>
+                <source src="{src}" type="audio/mp3">
+            </audio>
+        </div>
+        <script>
+            (function() {{
+                const audio = document.getElementById('{audio_id}');
+                if (!audio) return;
+                {volume_js}
+                audio.play().catch(() => {{}});
+            }})();
+        </script>
+        """
+        components.html(html, height=0)
 
 
 async def _generar_audio_en_memoria(texto: str) -> bytes:
+    """Genera audio TTS en memoria usando `edge_tts`.
+
+    Args:
+        texto: Texto a sintetizar.
+
+    Returns:
+        Bytes del MP3 sintetizado.
+    """
+
     voz = "es-ES-AlvaroNeural"
     communicate = edge_tts.Communicate(texto, voz)
 
@@ -52,6 +83,15 @@ async def _generar_audio_en_memoria(texto: str) -> bytes:
 
 
 def _reproducir_bytes_automatico(audio_bytes: bytes) -> None:
+    """Inserta HTML para reproducir directamente bytes de audio (base64).
+
+    Args:
+        audio_bytes: Contenido binario del MP3.
+
+    Returns:
+        None
+    """
+
     b64 = base64.b64encode(audio_bytes).decode()
     codigo_html = f"""
         <audio autoplay="true">
@@ -62,6 +102,17 @@ def _reproducir_bytes_automatico(audio_bytes: bytes) -> None:
 
 
 def play_intro_once(texto: str = "Bienvenidos a Atrapa un Millón IA. Preparando partida...") -> None:
+    """Reproduce una introducción de bienvenida una sola vez por sesión.
+
+    Si el audio ya existe en `assets/audio/intro.mp3` lo reutiliza, si no lo genera.
+
+    Args:
+        texto: Texto de la introducción.
+
+    Returns:
+        None
+    """
+
     if edge_tts is None:
         return
     if st.session_state.get("intro_reproducida", False):
@@ -76,6 +127,15 @@ def play_intro_once(texto: str = "Bienvenidos a Atrapa un Millón IA. Preparando
 
 
 def speak_text(texto: str) -> None:
+    """Sintetiza y reproduce texto de forma inmediata en la UI.
+
+    Args:
+        texto: Texto a sintetizar y reproducir.
+
+    Returns:
+        None
+    """
+
     if edge_tts is None:
         return
     try:
@@ -86,7 +146,15 @@ def speak_text(texto: str) -> None:
 
 
 def generate_question_audio(question) -> str | None:
-    """Genera el audio de una pregunta y lo guarda en assets/audio. Devuelve la ruta."""
+    """Genera y guarda en disco el audio de una `Question`.
+
+    Args:
+        question: Objeto que contiene atributos `tema`, `pregunta` y `opciones`.
+
+    Returns:
+        Ruta al archivo MP3 creado o `None` si no se puede generar.
+    """
+
     if not question or edge_tts is None:
         return None
     try:
@@ -107,6 +175,12 @@ def generate_question_audio(question) -> str | None:
 
 
 def play_background_music() -> None:
+    """Reproduce la música de fondo si existe el archivo en `assets/audio`.
+
+    Returns:
+        None
+    """
+
     background_path = os.path.join("assets", "audio", "background.mp3")
     if not os.path.exists(background_path):
         return
@@ -116,6 +190,15 @@ def play_background_music() -> None:
 
 
 def play_question_voice(audio_path: str | None) -> None:
+    """Reproduce la pista de voz de la pregunta desde archivo.
+
+    Args:
+        audio_path: Ruta al MP3 de la pregunta.
+
+    Returns:
+        None
+    """
+
     if not audio_path or not os.path.exists(audio_path):
         return
     with open(audio_path, "rb") as file:
@@ -124,12 +207,30 @@ def play_question_voice(audio_path: str | None) -> None:
 
 
 def play_question_audio(audio_bytes: bytes) -> None:
+    """Reproduce audio de pregunta que ya está en memoria (bytes).
+
+    Args:
+        audio_bytes: Contenido binario del MP3.
+
+    Returns:
+        None
+    """
+
     if not audio_bytes:
         return
     _reproducir_bytes_automatico(audio_bytes)
 
 
 def play_question_scene(audio_path: str | None) -> None:
+    """Reproduce la escena de la pregunta: música de fondo + voz de pregunta.
+
+    Args:
+        audio_path: Ruta al MP3 de la pregunta.
+
+    Returns:
+        None
+    """
+
     if not audio_path:
         return
     play_background_music()
@@ -137,7 +238,14 @@ def play_question_scene(audio_path: str | None) -> None:
 
 
 def cleanup_question_audio() -> None:
-    """Elimina todos los archivos de audio de preguntas almacenados."""
+    """Elimina todos los archivos de audio de preguntas almacenados.
+
+    Busca archivos que empiecen por `question_` y terminen en `.mp3`.
+
+    Returns:
+        None
+    """
+
     audio_dir = os.path.join("assets", "audio")
     if not os.path.exists(audio_dir):
         return
@@ -152,6 +260,15 @@ def cleanup_question_audio() -> None:
 
 
 def speak_question(question) -> None:
+    """Sintetiza y reproduce la pregunta en voz (sin almacenar en disco).
+
+    Args:
+        question: Objeto con atributos `tema`, `pregunta` y `opciones`.
+
+    Returns:
+        None
+    """
+
     if not question:
         return
     tema = getattr(question, "tema", "")

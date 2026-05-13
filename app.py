@@ -31,6 +31,15 @@ cfg = GameConfig()
 
 
 def _sync_classic_background_job() -> None:
+    """Sincroniza el estado de generación clásica en background con `st.session_state`.
+
+    Comprueba el trabajo en la tabla de trabajos (`get_job`) y actualiza el estado
+    de generación cuando termina o hay un error.
+
+    Returns:
+        None
+    """
+
     if st.session_state.mode != "clasico":
         return
     if st.session_state.generation_status != "running":
@@ -60,6 +69,18 @@ def _sync_classic_background_job() -> None:
 
 
 def _on_mode_change(new_mode: str) -> None:
+    """Maneja el cambio de modo de juego solicitado desde la UI.
+
+    Si el modo no cambia no hace nada. Si hay una generación en curso la cancela y
+    resetea el estado para el nuevo modo.
+
+    Args:
+        new_mode: Modo solicitado ('custom' o 'clasico').
+
+    Returns:
+        None
+    """
+
     if st.session_state.mode == new_mode:
         return
     if st.session_state.generation_status == "running":
@@ -68,6 +89,15 @@ def _on_mode_change(new_mode: str) -> None:
 
 
 def _render_generation_controls() -> None:
+    """Renderiza los controles de configuración y gestiona la generación de preguntas.
+
+    Muestra opciones para elegir modo (custom/clásico), iniciar generación, y presenta
+    mensajes de estado sobre errores o procesos en curso.
+
+    Returns:
+        None
+    """
+
     st.subheader("Configuración")
 
     selected_mode = st.radio(
@@ -142,6 +172,20 @@ ASSET_CORRECT = "assets/trap_correct.svg"
 
 
 def _render_trap_column(option: str, idx: int, disabled: bool) -> None:
+    """Renderiza una columna de trampilla con controles de apuesta.
+
+    Muestra la imagen correspondiente (cerrada/abierta/correcta), el texto de la opción
+    y botones +/- para ajustar la apuesta (si no está deshabilitado).
+
+    Args:
+        option: Texto de la opción a mostrar.
+        idx: Índice de la columna (0-3) usado para generar claves de botón.
+        disabled: Si los controles deben estar deshabilitados.
+
+    Returns:
+        None
+    """
+
     image_path = ASSET_CLOSED
     if st.session_state.revealed_correct:
         if option == st.session_state.current_question.respuesta_correcta:
@@ -178,6 +222,14 @@ def _render_trap_column(option: str, idx: int, disabled: bool) -> None:
 
 
 def _render_betting_area() -> None:
+    """Renderiza el área de apuestas para la pregunta actual.
+
+    Muestra tema, pregunta, trampillas/opciones y controles para confirmar apuestas.
+
+    Returns:
+        None
+    """
+
     question = st.session_state.current_question
     if not question:
         return
@@ -240,6 +292,14 @@ def _render_betting_area() -> None:
 
 
 def _render_classic_topic_selector() -> None:
+    """Muestra selector de temas (2 opciones) para el modo clásico.
+
+    Si no hay más pares marca `game_over` en la sesión.
+
+    Returns:
+        None
+    """
+
     topics = pair_topics_for_current_round()
     if topics is None:
         st.session_state.game_over = True
@@ -263,6 +323,15 @@ def _render_classic_topic_selector() -> None:
 
 
 def _render_game_area() -> None:
+    """Renderiza la zona principal de la partida.
+
+    Dependiendo del estado de generación y de la partida muestra el resumen final,
+    el selector de temas (modo clásico) o el área de apuestas.
+
+    Returns:
+        None
+    """
+
     st.subheader("Partida")
     if st.session_state.generation_status != "done":
         st.info("Genera una partida para comenzar")

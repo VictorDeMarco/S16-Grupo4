@@ -11,12 +11,24 @@ from google.genai import types
 from src.betting import allowed_options_for_round
 from src.models import Question
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 class GeminiGenerationError(Exception):
-    pass
+    """Excepción personalizada para errores durante la generación con Gemini."""
 
 
 def _client() -> genai.Client:
+    """Crea y devuelve un cliente `genai.Client` usando la variable de entorno.
+
+    Raises:
+        GeminiGenerationError: Si no se encuentra la variable `GEMINI_API_KEY`.
+
+    Returns:
+        Instancia de `genai.Client` autenticada.
+    """
+
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise GeminiGenerationError("Falta GEMINI_API_KEY en variables de entorno")
@@ -24,6 +36,20 @@ def _client() -> genai.Client:
 
 
 def _extract_json_text(raw_text: str) -> str:
+    """Extrae un objeto JSON de un texto crudo que puede contener código o markdown.
+
+    Busca desde la primera llave '{' hasta la última '}' y devuelve ese fragmento.
+
+    Args:
+        raw_text: Texto potencialmente envuelto en markdown o con contenido adicional.
+
+    Returns:
+        Cadena con el JSON extraído.
+
+    Raises:
+        GeminiGenerationError: Si no se encuentra un JSON válido en el texto.
+    """
+
     raw_text = raw_text.strip()
     if raw_text.startswith("```"):
         raw_text = raw_text.strip("`")
@@ -37,6 +63,19 @@ def _extract_json_text(raw_text: str) -> str:
 
 
 def _validate_question_dict(item: dict[str, Any], expected_options: int) -> Question:
+    """Valida y convierte un diccionario bruto en una `Question`.
+
+    Args:
+        item: Diccionario con los campos esperados.
+        expected_options: Número esperado de opciones para la ronda actual.
+
+    Returns:
+        Instancia de `Question` validada.
+
+    Raises:
+        GeminiGenerationError: Cuando falta un campo o alguna regla no se cumple.
+    """
+
     required = ["tema", "pregunta", "opciones", "respuesta_correcta", "fuente_busqueda"]
     for key in required:
         if key not in item:
@@ -74,6 +113,12 @@ def _build_classic_prompt() -> str:
         rounds_description.append(
             f"Ronda {round_index}: cada pregunta del par debe tener {allowed_options_for_round(round_index)} opciones"
         )
+
+    """Construye el prompt que se envía a Gemini para generar pares clásicos.
+
+    Returns:
+        Cadena con el prompt formateado.
+    """
 
     return (
         "Eres un generador de preguntas para un juego tipo Atrapa un Millón. "
@@ -126,6 +171,15 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
 
     topics_json = json.dumps(expanded_topics, ensure_ascii=False)
 
+    """Construye el prompt para la generación de preguntas en modo custom.
+
+    Args:
+        expanded_topics: Lista de 8 temas ya expandidos para cada ronda.
+
+    Returns:
+        Cadena con el prompt formateado.
+    """
+
     return (
         "Eres un generador de preguntas para un juego tipo Atrapa un Millón. "
         "Debes usar la herramienta google_search para cada tema y responder solo JSON estricto. "
@@ -156,6 +210,18 @@ def _build_custom_prompt(expanded_topics: list[str]) -> str:
 
 
 def _call_gemini(prompt: str) -> dict[str, Any]:
+    """Llama al modelo Gemini con el prompt y devuelve el payload JSON.
+
+    Args:
+        prompt: Texto del prompt a enviar.
+
+    Returns:
+        Diccionario resultante del JSON parseado por Gemini.
+
+    Raises:
+        GeminiGenerationError: Si la respuesta está vacía o contiene un error.
+    """
+
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip() or "gemini-2.0-flash"
     client = _client()
 
@@ -179,6 +245,15 @@ def _call_gemini(prompt: str) -> dict[str, Any]:
 
 
 def generate_classic_pairs() -> list[tuple[Question, Question]]:
+    """Genera 8 pares de preguntas para el modo clásico llamando a Gemini.
+
+    Returns:
+        Lista de 8 tuplas `(Question, Question)` representando cada par por ronda.
+
+    Raises:
+        GeminiGenerationError: Si el payload no cumple el esquema esperado.
+    """
+
     payload = _call_gemini(_build_classic_prompt())
 
     if payload.get("modo") != "clasico":
@@ -205,6 +280,18 @@ def generate_classic_pairs() -> list[tuple[Question, Question]]:
 
 
 def generate_custom_questions(expanded_topics: list[str]) -> list[Question]:
+    """Genera exactamente 8 preguntas para modo custom usando Gemini.
+
+    Args:
+        expanded_topics: Lista de 8 temas ya expandidos (uno por ronda).
+
+    Returns:
+        Lista de 8 instancias `Question` validadas.
+
+    Raises:
+        GeminiGenerationError: Si el payload no cumple el esquema esperado.
+    """
+
     if len(expanded_topics) != 8:
         raise GeminiGenerationError("Custom requiere exactamente 8 temas expandidos")
 

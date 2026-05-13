@@ -10,6 +10,19 @@ from src.models import GameConfig, Question, RoundResult
 
 
 def prepare_custom_topics(topics: list[str], total_rounds: int = 8) -> list[str]:
+    """Normaliza y expande la lista de temas para cubrir `total_rounds`.
+
+    Elimina líneas vacías, recorta espacios y repite los temas en ciclo hasta
+    completar `total_rounds` elementos.
+
+    Args:
+        topics: Lista original de temas aportados por el usuario.
+        total_rounds: Número de rondas para las que se requiere tema (por defecto 8).
+
+    Returns:
+        Lista de temas de longitud `total_rounds` o lista vacía si no quedan temas válidos.
+    """
+
     cleaned = [item.strip() for item in topics if item.strip()]
     if not cleaned:
         return []
@@ -22,11 +35,29 @@ def prepare_custom_topics(topics: list[str], total_rounds: int = 8) -> list[str]
 
 
 def load_custom_questions(questions: list[Question]) -> None:
+    """Carga las preguntas custom en el estado de sesión.
+
+    Args:
+        questions: Lista de `Question` generadas para el modo custom.
+
+    Returns:
+        None
+    """
+
     st.session_state.questions_pool = questions
     st.session_state.current_question = questions[0] if questions else None
 
 
 def load_classic_pairs(classic_pairs: list[tuple[Question, Question]]) -> None:
+    """Carga los pares clásicos (modo `clasico`) en `st.session_state`.
+
+    Args:
+        classic_pairs: Lista de tuplas `(Question, Question)` representando cada par.
+
+    Returns:
+        None
+    """
+
     st.session_state.classic_pairs = classic_pairs
     st.session_state.current_pair_index = 0
     st.session_state.selected_topic_in_pair = None
@@ -34,6 +65,12 @@ def load_classic_pairs(classic_pairs: list[tuple[Question, Question]]) -> None:
 
 
 def pair_topics_for_current_round() -> tuple[str, str] | None:
+    """Devuelve los temas del par actual en modo clásico.
+
+    Returns:
+        Tupla `(tema_izquierda, tema_derecha)` si existe el par, o `None` si ya no hay pares.
+    """
+
     pair_index = st.session_state.current_pair_index
     pairs = st.session_state.classic_pairs
     if pair_index >= len(pairs):
@@ -43,6 +80,15 @@ def pair_topics_for_current_round() -> tuple[str, str] | None:
 
 
 def choose_topic_for_current_pair(chosen_topic: str) -> Question | None:
+    """Selecciona el tema elegido del par actual y lo establece como `current_question`.
+
+    Args:
+        chosen_topic: Tema elegido por el jugador.
+
+    Returns:
+        La `Question` seleccionada o `None` si el índice de par es inválido.
+    """
+
     pair_index = st.session_state.current_pair_index
     if pair_index >= len(st.session_state.classic_pairs):
         return None
@@ -55,10 +101,28 @@ def choose_topic_for_current_pair(chosen_topic: str) -> Question | None:
 
 
 def get_round_option_count(round_index: int) -> int:
+    """Devuelve cuántas opciones debe mostrar una ronda específica.
+
+    Args:
+        round_index: Índice de la ronda (1-based).
+
+    Returns:
+        Número de opciones esperadas para esa ronda.
+    """
+
     return allowed_options_for_round(round_index, GameConfig())
 
 
 def initialize_bets_for_current_question() -> None:
+    """Inicializa el diccionario de apuestas para la pregunta actual y prepara audio.
+
+    Crea `bets_by_option` con 0 para cada opción y genera el audio de la pregunta
+    (sin reproducirlo aún), almacenando el resultado en `pending_question_audio`.
+
+    Returns:
+        None
+    """
+
     question = st.session_state.current_question
     if not question:
         return
@@ -74,6 +138,12 @@ def initialize_bets_for_current_question() -> None:
 
 
 def resolve_current_round() -> RoundResult | None:
+    """Resuelve la ronda actual calculando ganancias y registrando el resultado.
+
+    Returns:
+        `RoundResult` con los datos de la ronda o `None` si no hay pregunta actual.
+    """
+
     question: Question | None = st.session_state.current_question
     if not question:
         return None
@@ -99,6 +169,15 @@ def resolve_current_round() -> RoundResult | None:
 
 
 def advance_round_or_finish() -> None:
+    """Avanza a la siguiente ronda o marca la partida como finalizada.
+
+    Limpia el audio previo y actualiza el estado de sesión. Si el jugador se queda sin
+    dinero o se completan las rondas, construye el resumen final.
+
+    Returns:
+        None
+    """
+
     cfg = GameConfig()
     # Limpiar audio de la pregunta anterior antes de avanzar
     voice.cleanup_question_audio()
@@ -133,6 +212,12 @@ def advance_round_or_finish() -> None:
 
 
 def build_final_summary() -> dict:
+    """Construye un resumen final de la partida.
+
+    Returns:
+        Diccionario con claves `dinero_final`, `rondas_jugadas` e `historial`.
+    """
+
     return {
         "dinero_final": st.session_state.money_total,
         "rondas_jugadas": len(st.session_state.history),
